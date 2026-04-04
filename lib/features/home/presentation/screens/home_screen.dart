@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:mindmate/core/theme/app_colors.dart';
+import 'package:mindmate/features/home/presentation/screens/chat_screen.dart';
 import 'package:mindmate/features/home/presentation/widgets/greeting_widget.dart';
 import 'package:mindmate/features/home/presentation/widgets/orb_widget.dart';
 import 'package:mindmate/shared/widgets/bottom_nav.dart';
@@ -79,7 +80,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       bottomNavigationBar: BottomNav(
         currentIndex: _navIndex,
-        onTap: (i) => setState(() => _navIndex = i),
+        onTap: (i) {
+          if (i == 1) {
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const ChatScreen(),
+                transitionsBuilder: (_, anim, __, child) =>
+                    FadeTransition(opacity: anim, child: child),
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            );
+            return;
+          }
+          setState(() => _navIndex = i);
+        },
       ),
     );
   }
