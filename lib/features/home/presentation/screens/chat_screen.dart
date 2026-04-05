@@ -26,12 +26,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
-    ref.read(chatProvider.notifier).addUserMessage(text);
+
+    // Clear input immediately
     _inputController.clear();
-    _scrollToBottom();
+
+    // Delegate everything to the notifier
+    await ref.read(chatProvider.notifier).sendMessage(text);
   }
 
   void _scrollToBottom() {
@@ -46,13 +49,57 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.error_outline_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 13,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Dismiss',
+          textColor: Colors.white,
+          onPressed: () {
+            ref.read(chatProvider.notifier).clearError();
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final chatState = ref.watch(chatProvider);
 
+    // Auto-scroll on new messages
     ref.listen(chatProvider, (prev, next) {
       if (next.messages.length != (prev?.messages.length ?? 0)) {
         _scrollToBottom();
+      }
+      // Show error snackbar when error appears
+      if (next.error != null && next.error != prev?.error) {
+        _showErrorSnackbar(next.error!);
       }
     });
 
@@ -83,6 +130,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  // ── Message list ──────────────────────────────────────────────
+
   Widget _buildMessageList(ChatState chatState) {
     final itemCount = chatState.messages.length + (chatState.isLoading ? 1 : 0);
 
@@ -103,6 +152,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       },
     );
   }
+
+  // ── Empty state ───────────────────────────────────────────────
 
   Widget _buildEmptyState() {
     return Center(
@@ -156,6 +207,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+
+  // ── AppBar ────────────────────────────────────────────────────
 
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
@@ -281,6 +334,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
     );
   }
+
+  // ── Background blobs ──────────────────────────────────────────
 
   Widget _buildBackgroundBlobs() {
     return Stack(

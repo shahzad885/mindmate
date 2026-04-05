@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mindmate/features/chat/data/models/message_model.dart';
+import 'package:mindmate/features/chat/data/repositories/chat_repository.dart';
 import 'package:uuid/uuid.dart';
 
 class ChatState {
@@ -27,20 +28,36 @@ class ChatState {
 // ── Notifier ──────────────────────────────────────────────────
 
 class ChatNotifier extends StateNotifier<ChatState> {
-  ChatNotifier() : super(const ChatState());
+  ChatNotifier(this._repository) : super(const ChatState());
 
+  final ChatRepository _repository;
   final _uuid = const Uuid();
+
+  Future<void> sendMessage(String userContent) async {
+    if (userContent.trim().isEmpty) return;
+
+    addUserMessage(userContent);
+    setLoading(true);
+
+    try {
+      final response = await _repository.sendMessage(messages: state.messages);
+      addAssistantMessage(response);
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        error: _friendlyError(e.toString()),
+      );
+    }
+  }
 
   void addUserMessage(String content) {
     if (content.trim().isEmpty) return;
-
     final message = MessageModel(
       id: _uuid.v4(),
       content: content.trim(),
       role: 'user',
       timestamp: DateTime.now(),
     );
-
     state = state.copyWith(messages: [...state.messages, message], error: null);
   }
 
@@ -51,7 +68,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
       role: 'assistant',
       timestamp: DateTime.now(),
     );
-
     state = state.copyWith(
       messages: [...state.messages, message],
       isLoading: false,
@@ -66,10 +82,24 @@ class ChatNotifier extends StateNotifier<ChatState> {
   void clearError() {
     state = state.copyWith(error: null);
   }
+
+  String _friendlyError(String raw) {
+    if (raw.contains('401') || raw.contains('403')) {
+      return 'Invalid API key.';
+    }
+    if (raw.contains('429')) {
+      return 'Rate limit reached. Try again in a moment.';
+    }
+    if (raw.contains('SocketException')) {
+      return 'No internet connection.';
+    }
+    return raw; // show raw error until confirmed working
+  }
 }
 
 // ── Provider ──────────────────────────────────────────────────
 
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
-  return ChatNotifier();
+  final repository = ref.watch(chatRepositoryProvider);
+  return ChatNotifier(repository);
 });
