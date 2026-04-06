@@ -1,36 +1,61 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../core/ai/ai_message.dart';
 import '../../../../core/ai/ai_provider_interface.dart';
 import '../../../../core/ai/ai_service_provider.dart';
+import '../../../memory/data/repositories/memory_repository.dart';
 import '../models/message_model.dart';
 
 class ChatRepository {
   final AiProviderInterface _aiProvider;
+  final MemoryRepository _memoryRepository;
 
-  ChatRepository(this._aiProvider);
+  ChatRepository(this._aiProvider, this._memoryRepository);
 
   Future<String> sendMessage({
     required List<MessageModel> messages,
     String userName = 'Friend',
   }) async {
-    // Convert MessageModel list → AiMessage list
+    // 1. Convert MessageModel list → AiMessage list
     final aiMessages = messages.map((m) => m.toAiMessage()).toList();
 
-    // Build system prompt (memory empty for now — injected in Step 6)
+    // 2. Load memory context
+    final memoryContext = _memoryRepository.getMemoryContext();
+    final peopleList = _memoryRepository.getPeopleList();
+    final eventsList = _memoryRepository.getEventsList();
+    final goalsList = _memoryRepository.getGoalsList();
+    final currentMood = _memoryRepository.getCurrentMood();
+
+    // 3. Build system prompt with memory injected
     final systemPrompt = _buildSystemPrompt(
       userName: userName,
-      memoryContext: '',
-      moodSummary: 'No mood data yet.',
-      peopleList: 'None yet.',
-      eventsList: 'None yet.',
-      goalsList: 'None yet.',
-      currentMood: 'Unknown.',
+      memoryContext: memoryContext,
+      moodSummary: 'Based on recent conversations.',
+      peopleList: peopleList,
+      eventsList: eventsList,
+      goalsList: goalsList,
+      currentMood: currentMood,
     );
 
-    return await _aiProvider.sendMessage(
+    // 4. Call AI provider
+    final response = await _aiProvider.sendMessage(
       messages: aiMessages,
       systemPrompt: systemPrompt,
     );
+
+    // 5. Extract memories from the last user message after getting response
+    final lastUserMessage = messages.lastWhere(
+      (m) => m.isUser,
+      orElse: () => messages.last,
+    );
+    _extractMemoriesInBackground(lastUserMessage.content);
+
+    return response;
+  }
+
+  void _extractMemoriesInBackground(String userMessage) {
+    _memoryRepository.extractAndSave(userMessage).catchError((e) {
+      debugPrint('Background memory extraction error: $e');
+    });
   }
 
   String _buildSystemPrompt({
@@ -48,7 +73,7 @@ You are this person's closest friend who remembers everything about their life.
 
 ABOUT THIS PERSON:
 Name: $userName
-$memoryContext
+${memoryContext.isNotEmpty ? memoryContext : 'Just getting to know them.'}
 
 RECENT MOOD PATTERN:
 $moodSummary
@@ -77,5 +102,6 @@ Current emotional state: $currentMood
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   final aiProvider = ref.watch(aiServiceProvider);
-  return ChatRepository(aiProvider);
+  final memoryRepository = ref.watch(memoryRepositoryProvider);
+  return ChatRepository(aiProvider, memoryRepository);
 });

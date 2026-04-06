@@ -295,7 +295,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
               const SizedBox(height: 1),
               Text(
-                'Gemini 2.0 Flash',
+                'Your best buddy',
                 style: GoogleFonts.plusJakartaSans(
                   fontSize: 11,
                   fontWeight: FontWeight.w400,

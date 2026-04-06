@@ -1,13 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:mindmate/features/chat/data/models/message_model.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/presentation/screens/home_screen.dart';
+import 'features/memory/data/models/memory_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: '.env'); // add this
-  debugPrint('=== GEMINI KEY: ${dotenv.env['GEMINI_API_KEY']}');
+
+  // Load environment variables
+  await dotenv.load(fileName: '.env');
+
+  // Initialize Hive
+  await Hive.initFlutter();
+
+  // Register adapters
+  Hive.registerAdapter(MemoryEntryAdapter());
+  Hive.registerAdapter(MessageModelAdapter());
+
+  // Open boxes
+  await Hive.openBox<MemoryEntry>('memories');
+  await Hive.openBox<MessageModel>('messages');
 
   runApp(const ProviderScope(child: MindMateApp()));
 }

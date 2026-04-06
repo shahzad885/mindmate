@@ -1,13 +1,26 @@
+import 'package:hive_flutter/hive_flutter.dart';
 import '../../../../core/ai/ai_message.dart';
 
-class MessageModel {
+part 'message_model.g.dart';
+
+@HiveType(typeId: 1)
+class MessageModel extends HiveObject {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String content;
-  final String role; // 'user' | 'assistant'
+
+  @HiveField(2)
+  final String role;
+
+  @HiveField(3)
   final DateTime timestamp;
+
+  @HiveField(4)
   final String? mood;
 
-  const MessageModel({
+  MessageModel({
     required this.id,
     required this.content,
     required this.role,
@@ -34,23 +47,20 @@ class MessageModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'content': content,
-        'role': role,
-        'timestamp': timestamp.toIso8601String(),
-        'mood': mood,
-      };
+    'id': id,
+    'content': content,
+    'role': role,
+    'timestamp': timestamp.toIso8601String(),
+    'mood': mood,
+  };
 
   factory MessageModel.fromJson(Map<String, dynamic> json) => MessageModel(
-        id: json['id'] as String,
-        content: json['content'] as String,
-        role: json['role'] as String,
-        timestamp: DateTime.parse(json['timestamp'] as String),
-        mood: json['mood'] as String?,
-      );
+    id: json['id'] as String,
+    content: json['content'] as String,
+    role: json['role'] as String,
+    timestamp: DateTime.parse(json['timestamp'] as String),
+    mood: json['mood'] as String?,
+  );
 
-  AiMessage toAiMessage() => AiMessage(
-        role: role,
-        content: content,
-      );
+  AiMessage toAiMessage() => AiMessage(role: role, content: content);
 }
