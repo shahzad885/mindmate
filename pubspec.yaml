@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
   flutter_dotenv: ^6.0.0
+  hive_flutter: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -47,7 +48,6 @@ dev_dependencies:
   flutter_riverpod: ^2.4.0
  
   # Local storage
-  hive_flutter: ^1.1.0
  
   # Typography
   google_fonts: ^6.1.0

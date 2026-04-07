@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:mindmate/core/theme/app_colors.dart';
 import 'package:mindmate/features/home/presentation/screens/chat_screen.dart';
-import 'package:mindmate/features/home/presentation/widgets/greeting_widget.dart';
-import 'package:mindmate/features/home/presentation/widgets/orb_widget.dart';
-import 'package:mindmate/shared/widgets/bottom_nav.dart';
-import 'package:mindmate/shared/widgets/glass_card.dart';
+import '../../../../core/theme/app_colors.dart';
+import '../../../../shared/widgets/bottom_nav.dart';
+import '../../../../shared/widgets/glass_card.dart';
+import '../widgets/orb_widget.dart';
+import '../widgets/greeting_widget.dart';
+import '../../../memory/presentation/screens/memory_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -85,6 +86,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Navigator.of(context).push(
               PageRouteBuilder(
                 pageBuilder: (_, __, ___) => const ChatScreen(),
+                transitionsBuilder: (_, anim, __, child) =>
+                    FadeTransition(opacity: anim, child: child),
+                transitionDuration: const Duration(milliseconds: 300),
+              ),
+            );
+            return;
+          }
+          if (i == 3) {
+            Navigator.of(context).push(
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const MemoryScreen(),
                 transitionsBuilder: (_, anim, __, child) =>
                     FadeTransition(opacity: anim, child: child),
                 transitionDuration: const Duration(milliseconds: 300),
@@ -275,7 +287,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: _QuickActionCard(
               icon: Icons.psychology_rounded,
               label: 'My Memories',
-              onTap: () {},
+              onTap: () => Navigator.of(context).push(
+                PageRouteBuilder(
+                  pageBuilder: (_, __, ___) => const MemoryScreen(),
+                  transitionsBuilder: (_, anim, __, child) =>
+                      FadeTransition(opacity: anim, child: child),
+                  transitionDuration: const Duration(milliseconds: 300),
+                ),
+              ),
             ),
           ),
         ],

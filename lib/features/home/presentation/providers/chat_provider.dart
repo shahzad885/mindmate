@@ -3,6 +3,9 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:mindmate/features/chat/data/models/message_model.dart';
 import 'package:mindmate/features/chat/data/repositories/chat_repository.dart';
 import 'package:uuid/uuid.dart';
+import '../../../memory/presentation/providers/memory_provider.dart';
+
+// ── State ─────────────────────────────────────────────────────
 
 class ChatState {
   final List<MessageModel> messages;
@@ -26,17 +29,20 @@ class ChatState {
   );
 }
 
+// ── Notifier ──────────────────────────────────────────────────
+
 class ChatNotifier extends StateNotifier<ChatState> {
-  ChatNotifier(this._repository) : super(const ChatState()) {
-    _loadMessages(); // load persisted messages on startup
+  ChatNotifier(this._repository, this._ref) : super(const ChatState()) {
+    _loadMessages();
   }
 
   final ChatRepository _repository;
+  final Ref _ref;
   final _uuid = const Uuid();
 
   Box<MessageModel> get _box => Hive.box<MessageModel>('messages');
 
-  // Load messages from Hive on startup
+  // Load persisted messages from Hive on startup
   void _loadMessages() {
     final messages = _box.values.toList()
       ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
@@ -46,12 +52,21 @@ class ChatNotifier extends StateNotifier<ChatState> {
   Future<void> sendMessage(String userContent) async {
     if (userContent.trim().isEmpty) return;
 
+    // 1. Add user message immediately
     addUserMessage(userContent);
+
+    // 2. Show typing indicator
     setLoading(true);
 
     try {
+      // 3. Call repository — AI responds
       final response = await _repository.sendMessage(messages: state.messages);
+
+      // 4. Add AI response
       addAssistantMessage(response);
+
+      // 5. Refresh memory provider so MemoryScreen updates live
+      _ref.read(memoryProvider.notifier).loadMemories();
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -95,7 +110,6 @@ class ChatNotifier extends StateNotifier<ChatState> {
     state = state.copyWith(error: null);
   }
 
-  // Clear all chat history
   Future<void> clearHistory() async {
     await _box.clear();
     state = state.copyWith(messages: []);
@@ -115,7 +129,9 @@ class ChatNotifier extends StateNotifier<ChatState> {
   }
 }
 
+// ── Provider ──────────────────────────────────────────────────
+
 final chatProvider = StateNotifierProvider<ChatNotifier, ChatState>((ref) {
   final repository = ref.watch(chatRepositoryProvider);
-  return ChatNotifier(repository);
+  return ChatNotifier(repository, ref);
 });
