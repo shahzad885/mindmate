@@ -7,6 +7,7 @@ MindMate is a Flutter app that acts as your closest AI friend — it **remembers
 <img width="820" height="587" alt="image" src="https://github.com/user-attachments/assets/7d0bee73-91fa-427a-b6d3-07650634ab44" />
 
 
+
 ## 💡 What Makes It Different
 
 Most AI chat apps forget you the moment you close them. MindMate doesn't.
